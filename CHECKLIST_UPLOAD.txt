@@ -1,0 +1,148 @@
+═══════════════════════════════════════════════════════════
+  ✅ CHECKLIST UPLOAD KE GITHUB PAGES
+═══════════════════════════════════════════════════════════
+
+📝 SEBELUM MULAI:
+────────────────────────────────────────────────────────────
+☐ Sudah punya email aktif
+☐ Koneksi internet stabil
+☐ Browser terbuka (Chrome/Firefox/Edge)
+
+
+🎯 LANGKAH 1: BUAT AKUN GITHUB
+────────────────────────────────────────────────────────────
+☐ Buka https://github.com
+☐ Klik tombol "Sign Up"
+☐ Isi email → Continue
+☐ Buat password → Continue
+☐ Pilih username → Continue
+☐ Verifikasi (jawab puzzle)
+☐ Klik "Create Account"
+☐ Cek email → Klik link verifikasi
+☐ ✅ AKUN GITHUB JADI!
+
+
+🎯 LANGKAH 2: BUAT REPOSITORY
+────────────────────────────────────────────────────────────
+☐ Login ke GitHub
+☐ Klik tombol hijau "New" (atau ikon + → New repository)
+☐ Isi form:
+   Repository name: absen-staff
+   Description: Sistem Izin Absen Staff
+☐ Pilih: ● Public
+☐ Centang: ☑️ Add a README file
+☐ Klik "Create Repository"
+☐ ✅ REPOSITORY JADI!
+
+
+🎯 LANGKAH 3: UPLOAD FILE
+────────────────────────────────────────────────────────────
+☐ Di repository, klik "Add file" → "Upload files"
+☐ Drag & drop file berikut (atau klik "choose your files"):
+
+   File yang WAJIB diupload:
+   ☐ login.html
+   ☐ dashboard.html  
+   ☐ style.css
+   ☐ auth.js
+   ☐ dashboard.js
+
+   File tambahan (optional):
+   ☐ README.md
+   ☐ PANDUAN_GITHUB_PAGES.md
+
+☐ Tunggu upload selesai
+☐ Tulis commit message: "Upload aplikasi absen staff"
+☐ Klik tombol hijau "Commit changes"
+☐ ✅ FILE SUDAH TERUPLOAD!
+
+
+🎯 LANGKAH 4: AKTIFKAN GITHUB PAGES
+────────────────────────────────────────────────────────────
+☐ Klik tab "Settings" (⚙️)
+☐ Scroll ke bawah, klik "Pages" di sidebar kiri
+☐ Di bagian "Branch":
+   ☐ Klik dropdown (awalnya "None")
+   ☐ Pilih "main" (atau "master")
+   ☐ Folder: biarkan "/ (root)"
+☐ Klik "Save"
+☐ Tunggu 1-2 menit
+☐ Refresh halaman (F5)
+☐ Akan muncul kotak hijau/biru dengan link:
+   "Your site is live at https://..."
+☐ ✅ GITHUB PAGES AKTIF!
+
+
+🎯 LANGKAH 5: COPY LINK APLIKASI
+────────────────────────────────────────────────────────────
+Format link:
+https://[USERNAME].github.io/absen-staff/login.html
+
+☐ Ganti [USERNAME] dengan username GitHub Anda
+☐ Copy link lengkap (HARUS ada /login.html di akhir)
+☐ Test buka di browser
+☐ ✅ APLIKASI ONLINE!
+
+
+🎯 LANGKAH 6: SHARE KE TIM
+────────────────────────────────────────────────────────────
+☐ Copy link aplikasi
+☐ Share via:
+   ☐ WhatsApp
+   ☐ Email
+   ☐ Telegram
+   ☐ Atau cara lain
+
+Template pesan:
+────────────────────────────────────────────────────────────
+Halo Tim,
+
+Aplikasi Absen Staff sudah online!
+Link: https://[USERNAME].github.io/absen-staff/login.html
+
+Cara pakai:
+1. Buka link di atas
+2. Klik "Buat Akun Baru"
+3. Isi form registrasi
+4. Login dengan email & password Anda
+
+Selamat menggunakan! 🎉
+────────────────────────────────────────────────────────────
+
+☐ ✅ TIM SUDAH DAPAT LINK!
+
+
+═══════════════════════════════════════════════════════════
+  🎉 SELESAI! APLIKASI SUDAH ONLINE!
+═══════════════════════════════════════════════════════════
+
+Link Anda:
+https://[USERNAME].github.io/absen-staff/login.html
+
+(Ganti [USERNAME] dengan username GitHub Anda)
+
+
+⚠️ JIKA ADA MASALAH:
+────────────────────────────────────────────────────────────
+❌ 404 Not Found
+   → Tunggu 5-10 menit, GitHub masih deploy
+   → Pastikan URL benar (ada /login.html di akhir)
+
+❌ CSS tidak load
+   → Cek semua 5 file sudah terupload
+   → Hard refresh: Ctrl + Shift + R
+
+❌ Tidak bisa akses
+   → Pastikan repository Public (bukan Private)
+   → Settings → Change visibility → Make public
+
+
+📞 Butuh bantuan detail?
+────────────────────────────────────────────────────────────
+Buka file: PANDUAN_GITHUB_PAGES.md
+(Ada panduan lengkap dengan penjelasan detail)
+
+
+═══════════════════════════════════════════════════════════
+  Print checklist ini dan centang setiap step! ✅
+═══════════════════════════════════════════════════════════

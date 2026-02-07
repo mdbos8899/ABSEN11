@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sistem Izin Absen Staff</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- FULL SCREEN LOCK OVERLAY - Muncul saat staff keluar dan belum masuk -->
+    <div id="lockScreen" class="lock-screen hidden">
+        <div class="lock-content">
+            <div class="lock-icon">🔒</div>
+            <h1>ANDA SEDANG IZIN KELUAR</h1>
+            
+            <!-- Real-time clock di lock screen -->
+            <div class="lock-realtime-clock">
+                <div class="lock-clock-time" id="lockClockTime"></div>
+                <div class="lock-clock-date" id="lockClockDate"></div>
+            </div>
+            
+            <div class="lock-info">
+                <div class="info-item">
+                    <span class="label">Inisial:</span>
+                    <span class="value" id="lockInisial"></span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Jam Keluar:</span>
+                    <span class="value" id="lockJamKeluar"></span>
+                </div>
+            </div>
+            
+            <!-- Form untuk input Jam Masuk saat lock aktif -->
+            <div class="lock-return-form">
+                <h3>Masuk Kembali</h3>
+                <div class="lock-time-display" id="lockCurrentTime">--:--</div>
+                <button type="button" id="btnAmbilWaktu" class="btn-get-time">⏰ ISI JAM SEKARANG</button>
+                <button type="button" id="btnMasukKembali" class="btn-return" disabled>KONFIRMASI MASUK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APPLICATION -->
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="header-left">
+                    <h1>📋 SISTEM IZIN ABSEN STAFF</h1>
+                    <p class="subtitle">Monitoring Keluar Masuk Karyawan</p>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <span class="user-name" id="userName">Loading...</span>
+                        <span class="user-email" id="userEmail">email@example.com</span>
+                    </div>
+                    <button id="btnLogout" class="btn-logout">🚪 Logout</button>
+                </div>
+            </div>
+            <div class="realtime-clock">
+                <div class="clock-date" id="clockDate"></div>
+                <div class="clock-time" id="clockTime"></div>
+            </div>
+        </header>
+
+        <!-- FORM INPUT IZIN -->
+        <section class="form-section">
+            <h2>Form Izin Keluar/Masuk</h2>
+            <form id="formIzin" class="izin-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="jamKeluar">Jam Keluar <span class="required">*</span></label>
+                        <div class="time-input-wrapper">
+                            <input type="time" id="jamKeluar" required>
+                            <button type="button" class="btn-now" id="btnJamKeluarNow" title="Isi dengan waktu sekarang">⏰ Sekarang</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="keperluan">Keperluan <span class="required">*</span></label>
+                        <select id="keperluan" required>
+                            <option value="">-- Pilih Keperluan --</option>
+                            <option value="MEROKOK">MEROKOK</option>
+                            <option value="BAB">BAB</option>
+                            <option value="KENCING">KENCING</option>
+                            <option value="AMBIL MAKAN">AMBIL MAKAN</option>
+                            <option value="BELI KOPI">BELI KOPI</option>
+                            <option value="SHOLAT">SHOLAT</option>
+                            <option value="BREAK">BREAK</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">SUBMIT IZIN</button>
+            </form>
+        </section>
+
+        <!-- TABEL DATA IZIN -->
+        <section class="table-section">
+            <div class="table-header">
+                <h2>History Izin Semua Staff</h2>
+                <div class="export-buttons">
+                    <button id="btnExportCSV" class="btn-export">📄 Export CSV</button>
+                    <button id="btnExportExcel" class="btn-export">📊 Export Excel</button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="tableIzin">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>Nama Staff</th>
+                            <th>Inisial</th>
+                            <th>Jam Keluar</th>
+                            <th>Jam Masuk</th>
+                            <th>Total Durasi</th>
+                            <th>Keperluan</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data akan diisi oleh JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>
