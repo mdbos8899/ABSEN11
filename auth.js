@@ -188,11 +188,11 @@ function handleLogin(e) {
     e.preventDefault();
     console.log('handleLogin called');
     
-    const usernameOrEmail = document.getElementById('username').value.trim();
+    const usernameOrEmail = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const errorMessage = document.getElementById('errorMessage');
     
-    console.log('Username:', usernameOrEmail);
+    console.log('Email/Username:', usernameOrEmail);
     console.log('Password length:', password.length);
     
     if (!usernameOrEmail || !password) {
