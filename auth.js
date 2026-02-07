@@ -86,13 +86,16 @@ function findUser(usernameOrEmail) {
 
 // Login user
 function loginUser(usernameOrEmail, password) {
+    console.log('loginUser called with:', usernameOrEmail);
     const user = findUser(usernameOrEmail);
+    console.log('User found:', user);
     
     if (!user) {
         return { success: false, message: 'Username/Email tidak ditemukan!' };
     }
     
     if (user.password !== password) {
+        console.log('Password mismatch. Expected:', user.password, 'Got:', password);
         return { success: false, message: 'Password salah!' };
     }
     
@@ -131,6 +134,7 @@ function isLoggedIn() {
 // ========================================
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Auth.js loaded');
     initUsersDB();
     
     // Setup event listeners
@@ -140,9 +144,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeRegister = document.getElementById('closeRegister');
     const registerModal = document.getElementById('registerModal');
     
+    console.log('Login form found:', loginForm);
+    
     // Login form submit
     if (loginForm) {
         loginForm.addEventListener('submit', handleLogin);
+        console.log('Login form event listener attached');
     }
     
     // Register form submit
@@ -179,10 +186,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function handleLogin(e) {
     e.preventDefault();
+    console.log('handleLogin called');
     
     const usernameOrEmail = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
     const errorMessage = document.getElementById('errorMessage');
+    
+    console.log('Username:', usernameOrEmail);
+    console.log('Password length:', password.length);
     
     if (!usernameOrEmail || !password) {
         if (errorMessage) {
@@ -195,6 +206,7 @@ function handleLogin(e) {
     }
     
     const result = loginUser(usernameOrEmail, password);
+    console.log('Login result:', result);
     
     if (result.success) {
         // Redirect to dashboard
