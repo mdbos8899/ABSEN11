@@ -2,10 +2,30 @@
 // AUTHENTICATION SYSTEM
 // ========================================
 
-// Initialize users database
+// Initialize users database with default users
 function initUsersDB() {
     if (!localStorage.getItem('usersDB')) {
-        localStorage.setItem('usersDB', JSON.stringify([]));
+        const defaultUsers = [
+            {
+                id: 1,
+                nama: 'Administrator',
+                inisial: 'ADM',
+                email: 'admin@absensi.com',
+                username: 'admin',
+                password: 'admin123',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 2,
+                nama: 'User Demo',
+                inisial: 'USR',
+                email: 'user@absensi.com',
+                username: 'user',
+                password: 'user123',
+                createdAt: new Date().toISOString()
+            }
+        ];
+        localStorage.setItem('usersDB', JSON.stringify(defaultUsers));
     }
 }
 
@@ -55,12 +75,21 @@ function registerUser(nama, inisial, email, password) {
     return { success: true, message: 'Registrasi berhasil!' };
 }
 
+// Find user by username or email
+function findUser(usernameOrEmail) {
+    const users = getAllUsers();
+    return users.find(user => 
+        user.email.toLowerCase() === usernameOrEmail.toLowerCase() ||
+        (user.username && user.username.toLowerCase() === usernameOrEmail.toLowerCase())
+    );
+}
+
 // Login user
-function loginUser(email, password) {
-    const user = findUserByEmail(email);
+function loginUser(usernameOrEmail, password) {
+    const user = findUser(usernameOrEmail);
     
     if (!user) {
-        return { success: false, message: 'Email tidak ditemukan!' };
+        return { success: false, message: 'Username/Email tidak ditemukan!' };
     }
     
     if (user.password !== password) {
@@ -151,22 +180,32 @@ document.addEventListener('DOMContentLoaded', function() {
 function handleLogin(e) {
     e.preventDefault();
     
-    const email = document.getElementById('email').value.trim();
+    const usernameOrEmail = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
+    const errorMessage = document.getElementById('errorMessage');
     
-    if (!email || !password) {
-        alert('Mohon isi semua field!');
+    if (!usernameOrEmail || !password) {
+        if (errorMessage) {
+            errorMessage.textContent = 'Mohon isi semua field!';
+            errorMessage.style.display = 'block';
+        } else {
+            alert('Mohon isi semua field!');
+        }
         return;
     }
     
-    const result = loginUser(email, password);
+    const result = loginUser(usernameOrEmail, password);
     
     if (result.success) {
-        alert(result.message);
         // Redirect to dashboard
         window.location.href = 'dashboard.html';
     } else {
-        alert(result.message);
+        if (errorMessage) {
+            errorMessage.textContent = result.message;
+            errorMessage.style.display = 'block';
+        } else {
+            alert(result.message);
+        }
     }
 }
 
