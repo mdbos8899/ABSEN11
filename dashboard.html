@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Sistem Izin Absen Staff</title>
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
     <!-- FULL SCREEN LOCK OVERLAY - Muncul saat staff keluar dan belum masuk -->
@@ -126,6 +131,8 @@
         </section>
     </div>
 
+    <script src="firebase-config.js"></script>
+    <script src="firebase.js"></script>
     <script src="dashboard.js"></script>
 </body>
 </html>

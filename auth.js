@@ -1,117 +1,9 @@
 // ========================================
-// AUTHENTICATION SYSTEM
+// AUTHENTICATION SYSTEM WITH FIREBASE
 // ========================================
 
-// Initialize users database with default users
-function initUsersDB() {
-    if (!localStorage.getItem('usersDB')) {
-        const defaultUsers = [
-            {
-                id: 1,
-                nama: 'Administrator',
-                inisial: 'ADM',
-                email: 'admin@absensi.com',
-                username: 'admin',
-                password: 'admin123',
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: 2,
-                nama: 'User Demo',
-                inisial: 'USR',
-                email: 'user@absensi.com',
-                username: 'user',
-                password: 'user123',
-                createdAt: new Date().toISOString()
-            }
-        ];
-        localStorage.setItem('usersDB', JSON.stringify(defaultUsers));
-    }
-}
-
-// Get all users
-function getAllUsers() {
-    return JSON.parse(localStorage.getItem('usersDB') || '[]');
-}
-
-// Save users
-function saveUsers(users) {
-    localStorage.setItem('usersDB', JSON.stringify(users));
-}
-
-// Find user by email
-function findUserByEmail(email) {
-    const users = getAllUsers();
-    return users.find(user => user.email.toLowerCase() === email.toLowerCase());
-}
-
-// Register new user
-function registerUser(nama, inisial, email, password) {
-    const users = getAllUsers();
-    
-    // Check if email already exists
-    if (findUserByEmail(email)) {
-        return { success: false, message: 'Email sudah terdaftar!' };
-    }
-    
-    // Check if inisial already exists
-    if (users.some(user => user.inisial.toUpperCase() === inisial.toUpperCase())) {
-        return { success: false, message: 'Inisial sudah digunakan!' };
-    }
-    
-    // Create new user
-    const newUser = {
-        id: Date.now(),
-        nama: nama,
-        inisial: inisial.toUpperCase(),
-        email: email.toLowerCase(),
-        password: password, // In production, this should be hashed
-        createdAt: new Date().toISOString()
-    };
-    
-    users.push(newUser);
-    saveUsers(users);
-    
-    return { success: true, message: 'Registrasi berhasil!' };
-}
-
-// Find user by username or email
-function findUser(usernameOrEmail) {
-    const users = getAllUsers();
-    return users.find(user => 
-        user.email.toLowerCase() === usernameOrEmail.toLowerCase() ||
-        (user.username && user.username.toLowerCase() === usernameOrEmail.toLowerCase())
-    );
-}
-
-// Login user
-function loginUser(usernameOrEmail, password) {
-    console.log('loginUser called with:', usernameOrEmail);
-    const user = findUser(usernameOrEmail);
-    console.log('User found:', user);
-    
-    if (!user) {
-        return { success: false, message: 'Username/Email tidak ditemukan!' };
-    }
-    
-    if (user.password !== password) {
-        console.log('Password mismatch. Expected:', user.password, 'Got:', password);
-        return { success: false, message: 'Password salah!' };
-    }
-    
-    // Set current user session
-    const session = {
-        userId: user.id,
-        email: user.email,
-        nama: user.nama,
-        inisial: user.inisial,
-        loginAt: new Date().toISOString()
-    };
-    
-    localStorage.setItem('currentUser', JSON.stringify(session));
-    
-    return { success: true, message: 'Login berhasil!', user: session };
-}
+// Note: Firebase functions are now in firebase.js
+// This file handles UI interactions and calls Firebase functions
 
 // Get current logged in user
 function getCurrentUser() {
@@ -120,8 +12,11 @@ function getCurrentUser() {
 }
 
 // Logout user
-function logoutUser() {
-    localStorage.removeItem('currentUser');
+async function logoutUser() {
+    const result = await logoutUserFirebase();
+    if (!result.success) {
+        console.error('Logout failed:', result.message);
+    }
 }
 
 // Check if user is logged in
@@ -135,7 +30,7 @@ function isLoggedIn() {
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Auth.js loaded');
-    initUsersDB();
+    console.log('Firebase ready:', typeof firebase !== 'undefined');
     
     // Setup event listeners
     const loginForm = document.getElementById('loginForm');
@@ -184,18 +79,19 @@ document.addEventListener('DOMContentLoaded', function() {
 // EVENT HANDLERS
 // ========================================
 
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
     console.log('handleLogin called');
     
-    const usernameOrEmail = document.getElementById('email').value.trim();
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const errorMessage = document.getElementById('errorMessage');
+    const submitButton = e.target.querySelector('button[type="submit"]');
     
-    console.log('Email/Username:', usernameOrEmail);
+    console.log('Email:', email);
     console.log('Password length:', password.length);
     
-    if (!usernameOrEmail || !password) {
+    if (!email || !password) {
         if (errorMessage) {
             errorMessage.textContent = 'Mohon isi semua field!';
             errorMessage.style.display = 'block';
@@ -205,29 +101,52 @@ function handleLogin(e) {
         return;
     }
     
-    const result = loginUser(usernameOrEmail, password);
-    console.log('Login result:', result);
+    // Disable button and show loading
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span>Loading...</span>';
     
-    if (result.success) {
-        // Redirect to dashboard
-        window.location.href = 'dashboard.html';
-    } else {
+    try {
+        const result = await loginUserFirebase(email, password);
+        console.log('Login result:', result);
+        
+        if (result.success) {
+            // Redirect to dashboard
+            window.location.href = 'dashboard.html';
+        } else {
+            if (errorMessage) {
+                errorMessage.textContent = result.message;
+                errorMessage.style.display = 'block';
+            } else {
+                alert(result.message);
+            }
+            
+            // Re-enable button
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<span>Masuk</span><svg class="button-icon" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        }
+    } catch (error) {
+        console.error('Login error:', error);
         if (errorMessage) {
-            errorMessage.textContent = result.message;
+            errorMessage.textContent = 'Terjadi kesalahan. Silakan coba lagi.';
             errorMessage.style.display = 'block';
         } else {
-            alert(result.message);
+            alert('Terjadi kesalahan. Silakan coba lagi.');
         }
+        
+        // Re-enable button
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<span>Masuk</span><svg class="button-icon" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     }
 }
 
-function handleRegister(e) {
+async function handleRegister(e) {
     e.preventDefault();
     
     const nama = document.getElementById('regNama').value.trim();
     const inisial = document.getElementById('regInisial').value.trim();
     const email = document.getElementById('regEmail').value.trim();
     const password = document.getElementById('regPassword').value;
+    const submitButton = e.target.querySelector('button[type="submit"]');
     
     if (!nama || !inisial || !email || !password) {
         alert('Mohon isi semua field!');
@@ -244,18 +163,31 @@ function handleRegister(e) {
         return;
     }
     
-    const result = registerUser(nama, inisial, email, password);
+    // Disable button and show loading
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span>Loading...</span>';
     
-    if (result.success) {
-        alert(result.message + '\\nSilakan login dengan akun Anda.');
-        document.getElementById('registerModal').classList.add('hidden');
-        document.getElementById('registerForm').reset();
+    try {
+        const result = await registerUserFirebase(nama, inisial, email, password);
         
-        // Auto-fill login form
-        document.getElementById('email').value = email;
-        document.getElementById('password').focus();
-    } else {
-        alert(result.message);
+        if (result.success) {
+            alert(result.message + '\nSilakan login dengan akun Anda.');
+            document.getElementById('registerModal').classList.add('hidden');
+            document.getElementById('registerForm').reset();
+            
+            // Auto-fill login form
+            document.getElementById('email').value = email;
+            document.getElementById('password').focus();
+        } else {
+            alert(result.message);
+        }
+    } catch (error) {
+        console.error('Register error:', error);
+        alert('Terjadi kesalahan. Silakan coba lagi.');
+    } finally {
+        // Re-enable button
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<span>Daftar Sekarang</span><svg class="button-icon" viewBox="0 0 24 24" fill="none"><path d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.7088 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.76489 14.1003 1.98232 16.07 2.86" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M22 4L12 14.01L9 11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     }
 }
 

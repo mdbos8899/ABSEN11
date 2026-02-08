@@ -1,16 +1,16 @@
 // ========================================
-// IMPORT AUTH FUNCTIONS
+// IMPORT AUTH FUNCTIONS (Firebase handles this)
 // ========================================
 
-// Get current user from auth.js functions
+// Get current user (from localStorage for quick access after Firebase auth)
 function getCurrentUser() {
     const userStr = localStorage.getItem('currentUser');
     return userStr ? JSON.parse(userStr) : null;
 }
 
-function logoutUser() {
-    localStorage.removeItem('currentUser');
-    window.location.href = 'login.html';
+async function logoutUser() {
+    await logoutUserFirebase();
+    window.location.href = 'index.html';
 }
 
 // ========================================
@@ -20,32 +20,30 @@ function logoutUser() {
 let dataIzin = [];
 let currentLockedStaffId = null;
 let currentUser = null;
+let unsubscribeFirestore = null; // For cleanup Firebase listener
 
 // ========================================
 // INITIALIZATION
 // ========================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Check if user is logged in
     currentUser = getCurrentUser();
     
     if (!currentUser) {
         // Redirect to login if not logged in
-        window.location.href = 'login.html';
+        window.location.href = 'index.html';
         return;
     }
     
     // Display user info
     displayUserInfo();
     
-    // Load data dari localStorage
-    loadDataFromStorage();
+    // Load data dari Firebase (real-time)
+    setupFirebaseListener();
     
-    // Render tabel
-    renderTable();
-    
-    // Cek apakah ada staff yang sedang keluar (lock screen)
-    checkLockStatus();
+    // Check user status if locked out
+    await checkUserLockStatus();
     
     // Setup event listeners
     setupEventListeners();
@@ -115,45 +113,47 @@ function handleAmbilWaktu() {
     document.getElementById('btnMasukKembali').dataset.jamMasuk = waktuSekarang;
 }
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
     e.preventDefault();
     
     const jamKeluar = document.getElementById('jamKeluar').value;
     const keperluan = document.getElementById('keperluan').value;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
     
     if (!jamKeluar || !keperluan) {
         alert('Mohon lengkapi semua field!');
         return;
     }
     
-    const status = 'KELUAR';
+    // Disable button
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Menyimpan...';
     
-    const izinData = {
-        id: Date.now(),
-        userId: currentUser.userId,
-        userNama: currentUser.nama,
-        userInisial: currentUser.inisial,
-        userEmail: currentUser.email,
-        tanggal: new Date().toISOString().split('T')[0],
-        jamKeluar: jamKeluar,
-        jamMasuk: '',
-        durasi: '',
-        keperluan: keperluan,
-        status: status,
-        createdAt: new Date().toISOString()
-    };
-    
-    dataIzin.push(izinData);
-    saveDataToStorage();
-    renderTable();
-    
-    e.target.reset();
-    
-    currentLockedStaffId = izinData.id;
-    saveCurrentLockToStorage();
-    showLockScreen(izinData);
-    
-    alert(`Izin ${status} berhasil dicatat`);
+    try {
+        const izinData = {
+            jamKeluar: jamKeluar,
+            tanggal: new Date().toISOString().split('T')[0],
+            keperluan: keperluan,
+            status: 'keluar'
+        };
+        
+        const result = await submitAttendanceFirebase(izinData);
+        
+        if (result.success) {
+            e.target.reset();
+            alert('Izin KELUAR berhasil dicatat');
+            
+            // Lock screen will be handled by Firebase real-time listener automatically
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Submit error:', error);
+        alert('Terjadi kesalahan. Silakan coba lagi.');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Izin Keluar';
+    }
 }
 
 // ========================================
@@ -199,29 +199,38 @@ function renderTable() {
     
     // Sort by date and time descending (newest first)
     const sortedData = [...dataIzin].sort((a, b) => {
-        return new Date(b.createdAt) - new Date(a.createdAt);
+        const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt || 0).getTime();
+        const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt || 0).getTime();
+        return timeB - timeA;
     });
     
     let html = '';
     sortedData.forEach((item, index) => {
-        const statusClass = item.status === 'KELUAR' ? 'status-keluar' : 'status-masuk';
+        const statusClass = item.status === 'keluar' || item.status === 'KELUAR' ? 'status-keluar' : 'status-masuk';
+        const statusText = (item.status === 'keluar' || item.status === 'KELUAR') ? 'KELUAR' : 'MASUK';
         const tanggalFormat = new Date(item.tanggal).toLocaleDateString('id-ID', { 
             day: '2-digit', 
             month: 'short', 
             year: 'numeric' 
         });
         
+        // Calculate duration if both times exist
+        let durasi = item.durasi || '-';
+        if (item.jamMasuk && !item.durasi) {
+            durasi = calculateDuration(item.jamKeluar, item.jamMasuk);
+        }
+        
         html += `
             <tr>
                 <td>${index + 1}</td>
                 <td>${tanggalFormat}</td>
-                <td>${item.userNama}</td>
-                <td><strong>${item.userInisial}</strong></td>
+                <td>${item.nama}</td>
+                <td><strong>${item.inisial}</strong></td>
                 <td>${item.jamKeluar}</td>
                 <td>${item.jamMasuk || '-'}</td>
-                <td>${item.durasi || '-'}</td>
+                <td>${durasi}</td>
                 <td>${item.keperluan}</td>
-                <td><span class="status-badge ${statusClass}">${item.status}</span></td>
+                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
             </tr>
         `;
     });
@@ -236,7 +245,7 @@ function renderTable() {
 function showLockScreen(data) {
     const lockScreen = document.getElementById('lockScreen');
     
-    document.getElementById('lockInisial').textContent = data.userInisial;
+    document.getElementById('lockInisial').textContent = data.inisial;
     document.getElementById('lockJamKeluar').textContent = data.jamKeluar;
     
     document.getElementById('lockCurrentTime').textContent = '--:--';
@@ -262,7 +271,7 @@ function hideLockScreen() {
 // HANDLE MASUK KEMBALI
 // ========================================
 
-function handleMasukKembali() {
+async function handleMasukKembali() {
     const btnMasukKembali = document.getElementById('btnMasukKembali');
     const jamMasuk = btnMasukKembali.dataset.jamMasuk;
     
@@ -271,67 +280,78 @@ function handleMasukKembali() {
         return;
     }
     
-    const staffIndex = dataIzin.findIndex(item => item.id === currentLockedStaffId);
-    
-    if (staffIndex === -1) {
+    if (!currentLockedStaffId) {
         alert('Error: Data tidak ditemukan');
         return;
     }
     
-    dataIzin[staffIndex].jamMasuk = jamMasuk;
-    dataIzin[staffIndex].durasi = calculateDuration(dataIzin[staffIndex].jamKeluar, jamMasuk);
-    dataIzin[staffIndex].status = 'MASUK';
+    // Disable button
+    btnMasukKembali.disabled = true;
+    btnMasukKembali.textContent = 'Menyimpan...';
     
-    saveDataToStorage();
-    renderTable();
-    hideLockScreen();
-    
-    alert(`Selamat datang kembali!`);
-}
-
-// ========================================
-// CHECK LOCK STATUS ON PAGE LOAD
-// ========================================
-
-function checkLockStatus() {
-    const lockedId = localStorage.getItem('currentLockedStaffId');
-    
-    if (lockedId) {
-        currentLockedStaffId = parseInt(lockedId);
-        const staffData = dataIzin.find(item => item.id === currentLockedStaffId);
+    try {
+        const result = await updateAttendanceFirebase(currentLockedStaffId, jamMasuk);
         
-        if (staffData && staffData.status === 'KELUAR') {
-            // Check if it's the current user
-            if (staffData.userId === currentUser.userId) {
-                showLockScreen(staffData);
-            } else {
-                // Different user, clear lock
-                currentLockedStaffId = null;
-                saveCurrentLockToStorage();
-            }
+        if (result.success) {
+            hideLockScreen();
+            alert('Selamat datang kembali!');
         } else {
-            currentLockedStaffId = null;
-            saveCurrentLockToStorage();
+            alert('Error: ' + result.message);
         }
+    } catch (error) {
+        console.error('Update error:', error);
+        alert('Terjadi kesalahan. Silakan coba lagi.');
+    } finally {
+        btnMasukKembali.disabled = false;
+        btnMasukKembali.textContent = 'MASUK KEMBALI';
     }
 }
 
 // ========================================
-// LOCAL STORAGE MANAGEMENT
+// FIREBASE REAL-TIME LISTENER
 // ========================================
 
+function setupFirebaseListener() {
+    console.log('Setting up Firebase real-time listener...');
+    
+    // Listen to all attendance records in real-time
+    unsubscribeFirestore = getAllAttendanceRealtime((records) => {
+        console.log('Received', records.length, 'records from Firebase');
+        dataIzin = records;
+        renderTable();
+    });
+}
+
+// ========================================
+// CHECK USER LOCK STATUS
+// ========================================
+
+async function checkUserLockStatus() {
+    const status = await checkUserOutStatus(currentUser.userId);
+    
+    if (status.isOut && status.record) {
+        currentLockedStaffId = status.record.id;
+        showLockScreen(status.record);
+    }
+}
+
+// ========================================
+// LOCAL STORAGE MANAGEMENT (Deprecated - Firebase handles this)
+// ========================================
+
+// Keep these for cleanup/migration purposes only
 function saveDataToStorage() {
-    localStorage.setItem('dataIzinStaff', JSON.stringify(dataIzin));
+    // No longer needed - Firebase handles it
+    console.log('saveDataToStorage called but Firebase handles this automatically');
 }
 
 function loadDataFromStorage() {
-    const stored = localStorage.getItem('dataIzinStaff');
-    if (stored) {
-        dataIzin = JSON.parse(stored);
-    }
+    // No longer needed - Firebase real-time listener handles this
+    console.log('loadDataFromStorage called but Firebase real-time listener handles this');
 }
 
 function saveCurrentLockToStorage() {
+    // Keep for local UI state only
     if (currentLockedStaffId) {
         localStorage.setItem('currentLockedStaffId', currentLockedStaffId.toString());
     } else {
@@ -349,11 +369,12 @@ function exportToCSV() {
         return;
     }
     
-    let csv = 'No,Tanggal,Nama Staff,Inisial,Jam Keluar,Jam Masuk,Total Durasi,Keperluan,Status\\n';
+    let csv = 'No,Tanggal,Nama Staff,Inisial,Jam Keluar,Jam Masuk,Total Durasi,Keperluan,Status\n';
     
     dataIzin.forEach((item, index) => {
         const tanggal = new Date(item.tanggal).toLocaleDateString('id-ID');
-        csv += `${index + 1},"${tanggal}","${item.userNama}","${item.userInisial}","${item.jamKeluar}","${item.jamMasuk || '-'}","${item.durasi || '-'}","${item.keperluan}","${item.status}"\\n`;
+        const durasi = item.durasi || (item.jamMasuk ? calculateDuration(item.jamKeluar, item.jamMasuk) : '-');
+        csv += `${index + 1},"${tanggal}","${item.nama}","${item.inisial}","${item.jamKeluar}","${item.jamMasuk || '-'}","${durasi}","${item.keperluan}","${item.status.toUpperCase()}"\n`;
     });
     
     downloadFile(csv, 'data-izin-staff.csv', 'text/csv');
@@ -380,16 +401,17 @@ function exportToExcel() {
     html += '<tbody>';
     dataIzin.forEach((item, index) => {
         const tanggal = new Date(item.tanggal).toLocaleDateString('id-ID');
+        const durasi = item.durasi || (item.jamMasuk ? calculateDuration(item.jamKeluar, item.jamMasuk) : '-');
         html += '<tr>';
         html += `<td>${index + 1}</td>`;
         html += `<td>${tanggal}</td>`;
-        html += `<td>${item.userNama}</td>`;
-        html += `<td>${item.userInisial}</td>`;
+        html += `<td>${item.nama}</td>`;
+        html += `<td>${item.inisial}</td>`;
         html += `<td>${item.jamKeluar}</td>`;
         html += `<td>${item.jamMasuk || '-'}</td>`;
-        html += `<td>${item.durasi || '-'}</td>`;
+        html += `<td>${durasi}</td>`;
         html += `<td>${item.keperluan}</td>`;
-        html += `<td>${item.status}</td>`;
+        html += `<td>${item.status.toUpperCase()}</td>`;
         html += '</tr>';
     });
     html += '</tbody></table></body></html>';
