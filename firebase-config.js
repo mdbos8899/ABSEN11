@@ -1,20 +1,16 @@
 // ========================================
 // FIREBASE CONFIGURATION
 // ========================================
-// IMPORTANT: Ganti dengan credential Firebase Anda sendiri
-// Cara mendapatkan Firebase credentials:
-// 1. Buka https://console.firebase.google.com/
-// 2. Klik "Add project" atau pilih project yang sudah ada
-// 3. Daftar aplikasi web (Web app)
-// 4. Copy Firebase configuration dan paste di bawah
+// Configuration untuk Firebase project: fir-28384
 
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyCYTGgxNeR4Ucgj5_nubQZYBIADeM0DjhA",
+    authDomain: "fir-28384.firebaseapp.com",
+    projectId: "fir-28384",
+    storageBucket: "fir-28384.firebasestorage.app",
+    messagingSenderId: "675536082033",
+    appId: "1:675536082033:web:d19de275f274724c76b7d0",
+    measurementId: "G-9WRGTV4TXX"
 };
 
 // Initialize Firebase
